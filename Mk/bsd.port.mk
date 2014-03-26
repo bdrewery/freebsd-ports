@@ -6558,7 +6558,26 @@ ${${target:tu}_COOKIE}::
 
 .endfor # foreach(targets)
 
-.PHONY: ${_PHONY_TARGETS} check-sanity fetch pkg
+.if defined(WITH_PKGNG)
+# If requested, check for a local or remote package before building.
+INSTALL_PORT_ENV?=	PORTSDIR="${PORTSDIR}" \
+					MAKE="${MAKE}" \
+					PKG_BIN="${PKG_BIN}" \
+					PKG_SUFX="${PKG_SUFX}" \
+					PACKAGES="${PACKAGES}" \
+					SCRIPTSDIR="${SCRIPTSDIR}"
+.if defined(FORCE_PKG_REGISTER)
+INSTALL_PORT_ENV+=	FORCE_PKG_REGISTER=1
+.endif
+.if !defined(_OPTIONS_OK)
+newinstall: config-conditional
+.endif
+newinstall:
+	@${SETENV} ${INSTALL_PORT_ENV} ${SH} ${SCRIPTSDIR}/install_port.sh \
+	  ${PKGORIGIN} ${PKGNAME} install
+.endif
+
+.PHONY: ${_PHONY_TARGETS} check-sanity fetch pkg newinstall
 
 .if !target(check-sanity)
 check-sanity: ${_SANITY_REAL_SEQ}

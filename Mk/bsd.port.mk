@@ -4814,6 +4814,8 @@ _INSTALL_DEPENDS=	\
 			else \
 			  (cd $$dir; ${MAKE} -DINSTALLS_DEPENDS $$target $$depends_args) ; \
 			fi; \
+		elif [ -n "${WITH_NEW_PACKAGES}" ]; then \
+			(cd $$dir; ${MAKE} -DINSTALLS_DEPENDS new$$target $$depends_args) ; \
 		else \
 			(cd $$dir; ${MAKE} -DINSTALLS_DEPENDS $$target $$depends_args) ; \
 		fi; \
@@ -6568,6 +6570,9 @@ INSTALL_PORT_ENV?=	PORTSDIR="${PORTSDIR}" \
 					SCRIPTSDIR="${SCRIPTSDIR}"
 .if defined(FORCE_PKG_REGISTER)
 INSTALL_PORT_ENV+=	FORCE_PKG_REGISTER=1
+.endif
+.if defined(INSTALLS_DEPENDS)
+INSTALL_PORT_ENV+=	INSTALLS_DEPENDS=1
 .endif
 .if !defined(_OPTIONS_OK)
 newinstall: config-conditional

@@ -40,6 +40,7 @@ case ${pkg_available} in
 		;;
 	none)
 		# Must build it.
+		${MAKE} -C ${PORTSDIR}/${ORIGIN} build-depends
 		exec ${MAKE} -C ${PORTSDIR}/${ORIGIN} ${REAL_INSTALL_TARGET}
 		;;
 esac

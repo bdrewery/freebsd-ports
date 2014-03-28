@@ -3055,6 +3055,9 @@ _TARGETS=	check-sanity fetch checksum extract patch configure all build install 
 .if !defined(NO_STAGE)
 _TARGETS+=	stage restage
 .endif
+.if defined(WITH_PKGNG)
+_TARGETS+=	upgrade
+.endif
 .for target in ${_TARGETS}
 .if !target(${target})
 ${target}:
@@ -4296,6 +4299,45 @@ checkpatch:
 	@cd ${.CURDIR} && ${MAKE} ${PATCH_SILENT} PATCH_CHECK_ONLY=yes ${_PATCH_DEP} ${_PATCH_REAL_SEQ}
 .endif
 
+.if defined(WITH_PKGNG)
+_PHONY_TARGETS+=	upgrade _realupgrade reupgrade
+.if !target(upgrade)
+_realupgrade:
+	@if ! [ -e "${PKG_BIN}" ]; then \
+	    ${ECHO_CMD} "===>   Pkg is not yet installed.  First install it from ports-mgmt/pkg."; \
+		exit 1; \
+	fi
+	@${ECHO_MSG} "===>  Checking if ${PKGORIGIN} already installed"; \
+	if ! ${PKG_INFO} -qE ${PKGORIGIN}; then \
+	    ${ECHO_CMD} "===>   ${PKGNAME} is not installed"; \
+		${ECHO_MSG} "      You may wish to \`\`make install'' to install this port."; \
+		exit 1; \
+	fi; \
+	if [ "`${PKG_QUERY} '%a' ${PKGORIGIN}`" = "1" ]; then \
+	  pkg_automatic="-DINSTALLS_DEPENDS"; \
+	fi; \
+	cd ${.CURDIR} && \
+	  ${SETENV} DEPENDS_TARGET=upgrade ${MAKE} build && \
+	  ${SETENV} DEPENDS_TARGET=upgrade ${MAKE} run-depends && \
+	  ${MAKE} stage && \
+	  ${MAKE} $${pkg_automatic} deinstall install
+
+# Use install cookie for upgrade
+upgrade::
+	@if [ -e ${INSTALL_COOKIE} ]; then \
+		${DO_NADA}; \
+	else \
+		cd ${.CURDIR} && ${MAKE} _realupgrade; \
+	fi
+.endif #!target(upgrade)
+
+.if !target(reupgrade)
+reupgrade:
+	@${RM} -f ${INSTALL_COOKIE}
+	@cd ${.CURDIR} && ${MAKE} upgrade
+.endif
+.endif #WITH_PKGNG
+
 # Reinstall
 #
 # Special target to re-run install
@@ -4888,7 +4930,7 @@ ${deptype:tl}-depends:
 						-e 's/<=/=gt=/; s/</=ge=/; s/>=/=lt=/; s/>/=le=/' \
 						-e 's/=gt=/>/; s/=ge=/>=/; s/=lt=/</; s/=le=/<=/'`; \
 					pkg_info=`${PKG_INFO} -E "$$inverse_dep" 2>/dev/null || ${TRUE}`; \
-					if [ "$$pkg_info" != "" ]; then \
+					if [ "$$pkg_info" != "" -a "${DEPENDS_TARGET}" != "upgrade" ]; then \
 						${ECHO_MSG} "===>   Found $$pkg_info, but you need to upgrade to $$prog."; \
 						exit 1; \
 					fi; \

@@ -22,7 +22,8 @@ case ${pkg_available} in
 		echo "====> Installing ${ORIGIN} from ${pkg_available} package"
 		;;
 	none)
-		echo "====> Building ${ORIGIN} from ports"
+		echo "====> Remote package not available for ${ORIGIN}"
+		echo "====> Building from ports"
 		;;
 esac
 case ${pkg_available} in

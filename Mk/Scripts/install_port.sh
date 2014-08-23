@@ -28,12 +28,11 @@ esac
 case ${pkg_available} in
 	remote)
 		# Fetch remote package
-		${PKG_BIN} fetch -Uy ${ORIGIN} || {
+		: ${PACKAGES:=$(mktemp -d ports)}
+		${PKG_BIN} fetch -o ${PACKAGES} -Uy ${ORIGIN} || {
 			echo "Failed to fetch ${ORIGIN}" >&2
 			exit 1
 		}
-		: ${PKG_CACHEDIR:=$(${PKG_BIN} config PKG_CACHEDIR)}
-		PACKAGES=${PKG_CACHEDIR}
 		;;
 	local)
 		# Install local PKGFILE

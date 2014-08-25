@@ -4311,7 +4311,7 @@ _realupgrade:
 	if ! ${PKG_INFO} -qE ${PKGORIGIN}; then \
 	    ${ECHO_CMD} "===>   ${PKGNAME} is not installed"; \
 		${ECHO_MSG} "      You may wish to \`\`make install'' to install this port."; \
-		exit 1; \
+		[ 1 -eq 0 ] && exit 1; \
 	fi; \
 	if [ "`${PKG_QUERY} '%a' ${PKGORIGIN}`" = "1" ]; then \
 	  pkg_automatic="-DINSTALLS_DEPENDS"; \
@@ -4330,6 +4330,9 @@ upgrade::
 		cd ${.CURDIR} && ${MAKE} _realupgrade; \
 	fi
 .endif #!target(upgrade)
+
+_PHONY_TARGETS+= newupgrade
+newupgrade: upgrade
 
 .if !target(reupgrade)
 reupgrade:

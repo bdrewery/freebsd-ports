@@ -3878,8 +3878,9 @@ post-clean-${_f}:
 	@cd ${.CURDIR} &&  ${SETENV} FLAVOR=${_f} ${MAKE} post-clean
 .endif
 .ORDER: ${CLEAN_DEPENDENCIES}
-clean: ${CLEAN_DEPENDENCIES}
+clean-real: ${CLEAN_DEPENDENCIES}
 .endfor
+PORTS_ENV_EXEC_TARGETS+= clean
 .endif
 
 .if !target(distclean)
@@ -4770,6 +4771,15 @@ PORTS_ENV_EXEC= \
 			dp_MAKE="${MAKE}" \
 			dp_SCRIPTSDIR="${SCRIPTSDIR}" \
 			${SH} ${SCRIPTSDIR}/ports_env_exec.sh
+
+# Targets that should be wrapped in ports_env_exec.sh so they pay the cost
+# of variabe executions only once rather than for each sub-make they invoke.
+.for tgt in ${PORTS_ENV_EXEC_TARGETS}
+.if !target(${tgt})
+${tgt}: .PHONY
+	@cd ${.CURDIR} && ${PORTS_ENV_EXEC} ${MAKE} ${.TARGET}-real
+.endif
+.endfor
 
 .if !target(pre-check-config)
 pre-check-config:

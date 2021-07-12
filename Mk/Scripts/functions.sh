@@ -153,7 +153,7 @@ validate_env() {
 	local envfault
 	for i ; do
 		set -f
-		if ! (eval ": \${${i}?}" ) >/dev/null; then
+		if ! (eval ": \${${i}?}" ) >/dev/null 2>&1; then
 			envfault="${envfault}${envfault:+" "}${i}"
 		fi
 		set +f
@@ -165,6 +165,10 @@ validate_env() {
 	fi
 }
 
+# Grab common environment that is expensive to lookup in downstream ports.
+# Not all of this is default known by bsd.port.mk nor is required for all
+# ports. It offers significant speedups though for anything using
+# executions (!=).
 export_ports_env() {
 	local export_vars make_cmd make_env var value uses
 
@@ -172,7 +176,7 @@ export_ports_env() {
 		return 0
 	fi
 
-	validate_env MAKE PORTSDIR
+	validate_env dp_MAKE PORTSDIR
 
 	uses="python compiler:features objc"
 
@@ -186,7 +190,7 @@ export_ports_env() {
 
 	make_cmd="${make_env}"
 
-	export_vars="$(${MAKE} -f ${PORTSDIR}/Mk/bsd.port.mk \
+	export_vars="$(${dp_MAKE} -f ${PORTSDIR}/Mk/bsd.port.mk \
 	    -V PORTS_ENV_VARS ${make_env} USES="${uses}")"
 
 	for var in ${export_vars}; do
@@ -194,7 +198,7 @@ export_ports_env() {
 	done
 
 	# Bring in all the vars, but not empty ones.
-	eval "$(${MAKE} -f ${PORTSDIR}/Mk/bsd.port.mk ${make_cmd} \
+	eval "$(${dp_MAKE} -f ${PORTSDIR}/Mk/bsd.port.mk ${make_cmd} \
 		USES="${uses}" | grep -v '=$' | sed -e 's,\\ $,,')"
 	for var in ${export_vars}; do
 		# Export and display non-empty ones.  This is not redundant

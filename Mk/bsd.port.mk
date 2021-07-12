@@ -4762,7 +4762,14 @@ ${_t}:
 .endif
 .endfor
 .endif
+# See export_ports_env() in Scripts/functions.sh
 PORTS_ENV_VARS+=	${_EXPORTED_VARS}
+PORTS_ENV_EXEC= \
+	${SETENV} \
+			PORTSDIR="${PORTSDIR}" \
+			dp_MAKE="${MAKE}" \
+			dp_SCRIPTSDIR="${SCRIPTSDIR}" \
+			${SH} ${SCRIPTSDIR}/ports_env_exec.sh
 
 .if !target(pre-check-config)
 pre-check-config:

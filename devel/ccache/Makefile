@@ -1,8 +1,7 @@
 # Created by: Dominic Marks <d.marks@student.umist.ac.uk>
 
 PORTNAME=	ccache
-PORTVERSION=	3.7.12
-PORTREVISION=	2
+PORTVERSION=	4.3
 CATEGORIES=	devel
 MASTER_SITES=	https://github.com/ccache/ccache/releases/download/v${DISTVERSION}/ \
 		LOCAL/bdrewery
@@ -51,7 +50,7 @@ CPPFLAGS+=	-DCC_IS_GCC
 
 SUB_LIST+=	HOWTO="${HOWTO}"
 
-post-patch:
+xxx-post-patch:
 	@${REINPLACE_CMD} \
 	    -e 's,_XOPEN_SOURCE 600,_XOPEN_SOURCE 700,' \
 	    -e 's,_POSIX_C_SOURCE 200112L,_POSIX_C_SOURCE 200809L,' \

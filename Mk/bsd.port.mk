@@ -2015,7 +2015,9 @@ ERROR+=	"Unknown USES=${f:C/\:.*//}"
 .endfor
 
 .if defined(PORTNAME)
+.if make(check-sanity) || make(show*-errors) || make(show*-warnings)
 .include "${PORTSDIR}/Mk/bsd.sanity.mk"
+.endif
 .endif
 
 .if defined(USE_LOCALE)

@@ -87,7 +87,6 @@ NONECIPHER_CONFIGURE_WITH=	nonecipher
 # See http://www.roumenpetrov.info/openssh/
 X509_VERSION=		13.2.2
 X509_PATCH_SITES=	http://www.roumenpetrov.info/openssh/x509-${X509_VERSION}/:x509
-X509_EXTRA_PATCHES+=	${FILESDIR}/extra-patch-x509-glue
 X509_PATCHFILES=	${PORTNAME}-8.8p1+x509-${X509_VERSION}.diff.gz:-p1:x509
 
 MIT_LIB_DEPENDS=		libkrb5.so.3:security/krb5

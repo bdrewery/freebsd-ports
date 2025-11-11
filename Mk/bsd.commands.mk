@@ -59,7 +59,22 @@ LDCONFIG?=		/sbin/ldconfig
 LHA_CMD?=		${LOCALBASE}/bin/lha
 LN?=			/bin/ln
 LS?=			/bin/ls
-MKDIR?=			/bin/mkdir -p
+MKDIR_CMD?=		/bin/mkdir -p
+MKDIR?=			mkdirs() {\
+				local dirs=;\
+				for dir in $$*; do\
+					if [ -d "$${dir}" ]; then\
+						continue;\
+					fi;\
+					dirs="$${dirs:+$${dirs} }$${dir}";\
+				done;\
+				case "$${dirs:+set}" in\
+				set) ;;\
+				*) return 0 ;;\
+				esac;\
+				${MKDIR_CMD} $${dirs};\
+			};\
+			mkdirs
 MKTEMP?=		/usr/bin/mktemp
 MOUNT?=			/sbin/mount
 MOUNT_DEVFS?=		${MOUNT} -t devfs devfs

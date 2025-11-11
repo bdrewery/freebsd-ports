@@ -123,14 +123,14 @@ generate_plist() {
 
 	### HANDLE DIRS
 	cat ${WRKDIR}/.plist-dirs-unsorted ${WRKDIR}/.mtree \
-	    | sort -u >${WRKDIR}/.traced-dirs
-	find ${STAGEDIR} -type d | sed -e "s,^${STAGEDIR},,;/^$/d" | sort \
-	    >${WRKDIR}/.staged-dirrms-sorted
+	    | sort -u -o ${WRKDIR}/.traced-dirs
+	find ${STAGEDIR} -type d | sed -e "s,^${STAGEDIR},,;/^$/d" |
+	    sort -o ${WRKDIR}/.staged-dirrms-sorted
 	find -s -d ${STAGEDIR}${PREFIX} -type d -empty | sed -e "s,^${STAGEDIR},,;\,^${PREFIX}$,d;/^$/d" \
 	    >${WRKDIR}/.staged-dirs-dfs
 	find -s -d ${STAGEDIR} -type d ! -path "${STAGEDIR}${PREFIX}/*" | sed -e "s,^${STAGEDIR},,;\,^${PREFIX}$,d;/^$/d" \
 	    >>${WRKDIR}/.staged-dirs-dfs
-	sort ${WRKDIR}/.staged-dirs-dfs >${WRKDIR}/.staged-dirs-sorted
+	sort ${WRKDIR}/.staged-dirs-dfs -o ${WRKDIR}/.staged-dirs-sorted
 	awk '{print FNR, $0}' ${WRKDIR}/.staged-dirs-dfs \
 	    >${WRKDIR}/.staged-dirs-dfs-sorted
 	# Find all staged dirs and then sort them by depth-first (find -d -s)
@@ -247,10 +247,10 @@ if [ $makeplist = 0 ] ; then
 	sed -e '/^@comment/d' ${WRKDIR}/.plist-dirs-unsorted \
 	    >${WRKDIR}/.plist-dirs-unsorted-no-comments
 	sed -i '' -e 's/^@comment //' ${WRKDIR}/.plist-dirs-unsorted
-	sed -e '/^@comment/d' ${WRKDIR}/.plist-files-unsorted | sort \
-	    >${WRKDIR}/.plist-files-no-comments
-	sed -e 's/^@comment //' ${WRKDIR}/.plist-files-unsorted | sort \
-	    >${WRKDIR}/.plist-files
+	sed -e '/^@comment/d' ${WRKDIR}/.plist-files-unsorted |
+	    sort -o ${WRKDIR}/.plist-files-no-comments
+	sed -e 's/^@comment //' ${WRKDIR}/.plist-files-unsorted |
+	    sort -o ${WRKDIR}/.plist-files
 else
 	# generate plist - pretend the plist had been empty
 	: >${WRKDIR}/.plist-dirs-unsorted
@@ -273,7 +273,7 @@ check_orphans_from_plist || ret=1
 
 # Prepare plist-dirs for directory checks
 sort -u ${WRKDIR}/.plist-dirs-unsorted-no-comments \
-    >${WRKDIR}/.plist-dirs-sorted-no-comments
+    -o ${WRKDIR}/.plist-dirs-sorted-no-comments
 
 check_missing_plist_items || ret=1
 

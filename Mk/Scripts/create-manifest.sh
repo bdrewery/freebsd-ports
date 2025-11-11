@@ -25,14 +25,16 @@ listcontains() {
 	lst=$2
 
 	for elt in ${lst} ; do
-		if [ ${elt} = ${str} ]; then
-			return 0
-		fi
+		case "${elt}" in
+		"${str}") return 0 ;;
+		esac
 	done
 	return 1
 }
 
-mkdir -p ${dp_METADIR}
+if [ ! -d "${dp_METADIR}" ]; then
+	mkdir -p "${dp_METADIR}"
+fi
 
 # Save stdout and redirect it to the manifest file.
 exec 3>&1 >${dp_METADIR}/+MANIFEST
@@ -104,9 +106,9 @@ for stage in INSTALL DEINSTALL; do
 		eval files="\${dp_PKG${prepost}${stage}}"
 		output=${dp_METADIR}/+${prepost:+${prepost}_}${stage}
 		for input in ${files}; do
-			[ -f "${input}" ] && cat ${input} >> ${output}
+			[ -f "${input}" ] && cat ${input} # STDOUT is $output
 			[ -f "${input}.lua" ] && cp ${input}.lua ${dp_METADIR}
-		done
+		done >> "${output}"
 	done
 done
 

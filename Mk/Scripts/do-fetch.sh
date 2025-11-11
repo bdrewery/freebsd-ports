@@ -107,7 +107,7 @@ for _file in "${@}"; do
 	SORTED_MASTER_SITES_CMD_TMP="echo ${dp_MASTER_SITE_OVERRIDE} $(echo -n "${__MASTER_SITES_TMP}" | awk "${dp_MASTER_SORT_AWK}") ${dp_MASTER_SITE_BACKUP}"
 	case ${dp_TARGET} in
 		fetch-list)
-			echo -n "mkdir -p ${dp_DISTDIR} && "
+			echo -n "${dp_MKDIR} ${dp_DISTDIR} && "
 			echo -n "cd ${dp_DISTDIR} && { "
 			;;
 	esac
@@ -128,13 +128,15 @@ for _file in "${@}"; do
 			*/*)
 				case ${dp_TARGET} in
 					fetch-list)
-						echo "mkdir -p \"${file%/*}\" && "
+						echo "${dp_MKDIR} \"${file%/*}\" && "
 						early_args="-o ${file}"
 						;;
 					fetch-url-list-int)
 						;;
 					*)
-						mkdir -p "${file%/*}"
+						if [ ! -d "${file%/*}" ]; then
+							mkdir -p "${file%/*}"
+						fi
 						early_args="-o ${file}"
 						;;
 				esac

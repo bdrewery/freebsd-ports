@@ -23,24 +23,23 @@ install_depends()
 	target=$2
 	subpkg=$3
 	depends_args=$4
-	case "${dp_USE_PACKAGE_DEPENDS:+set}.${dp_USE_PACKAGE_DEPENDS_ONLY:+set}" in
-	*set*) ;;
-	*)
+	case "${dp_USE_PACKAGE_DEPENDS}${dp_USE_PACKAGE_DEPENDS_ONLY}" in
+	"")
 		INSTALLS_DEPENDS=1 MAKEFLAGS="${dp_MAKEFLAGS}" ${dp_MAKE} -C ${origin} ${target} ${depends_args}
 		return 0
 		;;
 	esac
 
-	case "${subpkg:+set}" in
-	set)
-		port_var_fetch "${origin}" "${depends_args}" \
-			PKGFILE.${subpkg} pkgfile \
-			PKGBASE.${subpkg} pkgbase
-		;;
-	*)
+	case "${subpkg}" in
+	"")
 		port_var_fetch "${origin}" "${depends_args}" \
 			PKGFILE pkgfile \
 			PKGBASE pkgbase
+		;;
+	*)
+		port_var_fetch "${origin}" "${depends_args}" \
+			PKGFILE.${subpkg} pkgfile \
+			PKGBASE.${subpkg} pkgbase
 		;;
 	esac
 
@@ -97,9 +96,8 @@ find_lib()
 {
 	echo -n "===>   ${dp_PKGNAME} depends on shared library: $1"
 	libfile=$(env -i PATH="${PATH}" LIB_DIRS="${dp_LIB_DIRS}" LOCALBASE="${dp_LOCALBASE}" ${dp_SH} ${dp_SCRIPTSDIR}/find-lib.sh $1)
-	case "${libfile:+set}" in
-	set) ;;
-	*)
+	case "${libfile}" in
+	"")
 		echo " - not found"
 		return 1
 		;;
@@ -127,18 +125,16 @@ for _line in ${dp_RAWDEPENDS} ; do
 	origin=$2
 	last=${3:-}
 
-	case "${pattern:+set}" in
-	set) ;;
-	*)
+	case "${pattern}" in
+	"")
 		echo "Error: there is an empty port dependency in ${dp_DEPTYPE}" >&2
 		err=1
 		continue
 		;;
 	esac
 
-	case "${origin:+set}" in
-	set) ;;
-	*)
+	case "${origin}" in
+	"")
 		echo "Error: a dependency has an empty origin in ${dp_DEPTYPE}" >&2
 		err=1
 		continue
@@ -174,8 +170,7 @@ for _line in ${dp_RAWDEPENDS} ; do
 
 	depends_args="${dp_DEPENDS_ARGS}"
 	target=${dp_DEPENDS_TARGET}
-	case "${last:+set}" in
-	set)
+	if [ -n "${last:+set}" ]; then
 		# In case we depend on the fetch stage, actually run checksum,
 		# this prevent a MITM attack.
 		case "${last}" in
@@ -194,8 +189,7 @@ for _line in ${dp_RAWDEPENDS} ; do
 			depends_args="${depends_args:+${depends_args} }NOCLEANDEPENDS=yes"
 			;;
 		esac
-		;;
-	esac
+	fi
 
 	case ${dp_DEPTYPE} in
 	  LIB_DEPENDS)

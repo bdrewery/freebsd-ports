@@ -709,7 +709,10 @@ proxydeps() {
 	# Some .so are not executable, but we want to check them too.
 	while read -r file; do
 		# No results presents a blank line from heredoc.
-		[ -z "${file}" ] && continue
+		case "${file:+set}" in
+		set) ;;
+		*) continue ;;
+		esac
 		while read -r dep_file; do
 			# No results presents a blank line from heredoc.
 			case "${dep_file:+set}" in
@@ -780,7 +783,10 @@ proxydeps() {
 		fi
 	done
 
-	[ -z "${PROXYDEPS_FATAL}" ] && return 0
+	case "${PROXYDEPS_FATAL:+set}" in
+	set) ;;
+	*) return 0 ;;
+	esac
 
 	return ${rc}
 }
@@ -789,11 +795,17 @@ sonames() {
 	[ ! -d ${STAGEDIR}${PREFIX}/lib -o -n "${BUNDLE_LIBS}" ] && return 0
 	while read -r f; do
 		# No results presents a blank line from heredoc.
-		[ -z "${f}" ] && continue
+		case "${f:+set}" in
+		set) ;;
+		*) continue ;;
+		esac
 		# Ignore symlinks
 		[ -f "${f}" -a ! -L "${f}" ] || continue
 		# Ignore .debug files
-		[ "${f}" == "${f%.debug}" ] || continue
+		case "${f}" in
+		"${f%.debug}") ;;
+		*) continue ;;
+		esac
 		if ! readelf -d ${f} | grep SONAME > /dev/null; then
 			warn "${f} doesn't have a SONAME."
 			warn "pkg(8) will not register it as being provided by the port."
@@ -1034,9 +1046,9 @@ license()
 {
 	local lic autoaccept pkgmirror #distsell distmirror pkgsell
 
-	if [ -n "$DISABLE_LICENSES" ]; then
+	if [ -n "${DISABLE_LICENSES:+set}" ]; then
 		warn "You have disabled the licenses framework with DISABLE_LICENSES, unable to run checks"
-	elif [ -n "$LICENSE" ]; then
+	elif [ -n "${LICENSE:+set}" ]; then
 		for lic in $LICENSE_PERMS; do
 			case "$lic" in
 				auto-accept) autoaccept=1 ;;

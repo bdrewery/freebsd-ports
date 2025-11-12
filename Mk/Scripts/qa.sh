@@ -115,7 +115,9 @@ baselibs() {
 	local rc
 	local found_openssl
 	local file
-	[ "${PKGBASE}" = "pkg" -o "${PKGBASE}" = "pkg-devel" ] && return
+	case "${PKGBASE}" in
+	pkg|pkg-devel) return ;;
+	esac
 
 	while read -r f; do
 		case ${f} in
@@ -239,8 +241,15 @@ sharedmimeinfo() {
 
 	found=0
 	for f in ${STAGEDIR}${PREFIX}/share/mime/packages/*.xml; do
-		[ "${f}" = "${STAGEDIR}${PREFIX}/share/mime/packages/*.xml" ] && break #no matches
-		[ "${f}" = "${STAGEDIR}${PREFIX}/share/mime/packages/freedesktop.org.xml" ] && continue
+		case "${f}" in
+		"${STAGEDIR}${PREFIX}/share/mime/packages/*.xml")
+			# no matches
+			break
+			;;
+		"${STAGEDIR}${PREFIX}/share/mime/packages/freedesktop.org.xml")
+			continue
+			;;
+		esac
 		found=1
 		break
 	done
@@ -322,12 +331,22 @@ terminfo() {
 	local f found
 
 	for f in ${STAGEDIR}${PREFIX}/share/misc/*.terminfo; do
-		[ "${f}" = "${STAGEDIR}${PREFIX}/share/misc/*.terminfo" ] && break #no matches
+		case "${f}" in
+		"${STAGEDIR}${PREFIX}/share/misc/*.terminfo")
+			# no matches
+			break
+			;;
+		esac
 		found=1
 		break
 	done
 	for f in ${STAGEDIR}${PREFIX}/share/misc/terminfo.db*; do
-		[ "${f}" = "${STAGEDIR}${PREFIX}/share/misc/terminfo.db*" ] && break #no matches
+		case "${f}" in
+		"${STAGEDIR}${PREFIX}/share/misc/terminfo.db*")
+			# no matches
+			break
+			;;
+		esac
 		found=1
 		break
 	done
@@ -345,9 +364,9 @@ listcontains() {
 	lst=$2
 
 	for elt in ${lst} ; do
-		if [ ${elt} = ${str} ]; then
-			return 0
-		fi
+		case "${elt}" in
+		"${str}") return 0 ;;
+		esac
 	done
 	return 1
 }
@@ -666,16 +685,20 @@ proxydeps() {
 		[ -z "${file}" ] && continue
 		while read -r dep_file; do
 			# No results presents a blank line from heredoc.
-			[ -z "${dep_file}" ] && continue
+			case "${dep_file:+set}" in
+			set) ;;
+			*) continue ;;
+			esac
 			# Skip files we already checked.
 			if listcontains ${dep_file} "${already}"; then
 				continue
 			fi
-			if pkg which -q ${dep_file} > /dev/null 2>&1; then
-				dep_file_pkg=$(pkg which -qo ${dep_file})
-
+			if dep_file_pkg="$(pkg which -qo ${dep_file} \
+			    2>/dev/null)"; then
 				# Check that the .so we need has a SONAME
-				if [ "${dep_file_pkg}" != "${PKGORIGIN}" ]; then
+				case "${dep_file_pkg}" in
+				"${PKGORIGIN}") ;;
+				*)
 					# When grep -q finds a match it will close the pipe immediately.
 					# This may cause the test to fail when pipefail is turned on.
 					set +o pipefail
@@ -683,7 +706,8 @@ proxydeps() {
 						err "${file} is linked to ${dep_file} which does not have a SONAME.  ${dep_file_pkg} needs to be fixed."
 					fi
 					set -o pipefail
-				fi
+					;;
+				esac
 
 				# If we don't already depend on it, and we don't provide it
 				if ! listcontains ${dep_file_pkg} "${LIB_RUN_DEPENDS} ${PKGORIGIN}"; then
@@ -846,12 +870,14 @@ no_arch() {
 gemdeps()
 {
 	rc=0
-	if [ "${PKGBASE%%-*}" = "rubygem" ]; then
+	case "${PKGBASE%%-*}" in
+	rubygem)
 		# shellcheck disable=SC2153
 		# In the heredoc, ${PORTNAME} comes from the environment, not
 		# to be confused with ${portname}
 		while read -r l; do
-			if [ -n "${l}" ]; then
+			case "${l:+set}" in
+			set)
 				name=${l%% *}
 				vers=${l#* }
 				while read -r v; do
@@ -872,13 +898,15 @@ gemdeps()
 					vers=$(echo "${vers}"|cut -d '"' -f3-)
 				done)
 				EOF
-			fi
+				;;
+			esac
 		done <<-EOF
 		$(grep -a 's.add_runtime_dependency' ${STAGEDIR}${PREFIX}/lib/ruby/gems/*/specifications/${PORTNAME}-*.gemspec \
 			| sed 's|.*<\(.*\)>.*\[\(.*\)\])|\1 \2|' \
 			| sort -u)
 		EOF
-	fi
+		;;
+	esac
 	return $rc
 }
 
@@ -895,9 +923,9 @@ gemfiledeps()
 	fi
 
 	# skip check if port is a rubygem-* one; they have no Gemfiles
-	if [ "${PKGBASE%%-*}" = "rubygem" ]; then
-		return 0
-	fi
+	case "${PKGBASE%%-*}" in
+	rubygem) return 0 ;;
+	esac
 
 	# advise install of bundler if its not present for check
 	if ! type bundle > /dev/null 2>&1; then
@@ -931,16 +959,21 @@ flavors()
 {
 	local rc pkgnames uniques
 	rc=0
-	if [ -n "${FLAVOR}" ]; then
+	case "${FLAVOR:+set}" in
+	set)
 		pkgnames=$(make -C "${CURDIR}" flavors-package-names|sort)
 		uniques=$(echo "${pkgnames}"|uniq)
-		if [ "$pkgnames" != "${uniques}" ]; then
+		case "${pkgnames}" in
+		"${uniques}") ;;
+		*)
 			err "Package names are not unique with flavors:"
 			make -C "${CURDIR}" pretty-flavors-package-names >&2
 			err "maybe use <flavor>_PKGNAMEPREFIX/SUFFIX".
 			rc=1
-		fi
-	fi
+			;;
+		esac
+		;;
+	esac
 	return ${rc}
 }
 
@@ -988,9 +1021,12 @@ depends_blacklist()
 			lang/python|lang/python2|lang/python3)
 				# lang/python depends on lang/pythonX, but it's
 				# ok, it is also in the blacklist.
-				if [ ${PKGORIGIN} != lang/python ]; then
+				case "${PKGORIGIN}" in
+				lang/python) ;;
+				*)
 					instead="USES=python:xy with a specific version"
-				fi
+					;;
+				esac
 				;;
 			lang/gcc)
 				instead="USE_GCC"

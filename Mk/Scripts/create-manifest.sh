@@ -54,13 +54,27 @@ licenselogic: ${dp_LICENSE_COMB:-single}
 EOT
 
 # Then, the optional bits
-[ -z "${dp_WWW}" ] || echo "www: \"${dp_WWW%% *}\""
-[ -z "${dp_LICENSE}" ] || echo "licenses: [ ${dp_LICENSE} ]"
-[ -z "${dp_USERS}" ] || echo "users: [ ${dp_USERS} ]"
-[ -z "${dp_GROUPS}" ] || echo "groups: [ ${dp_GROUPS} ]"
-[ -n "${dp_NO_ARCH}" ] && echo "arch : $(${dp_PKG_BIN} config abi | tr '[:upper:]' '[:lower:]' | cut -d: -f1,2):*"
-[ -n "${dp_NO_ARCH}" ] && echo "abi : $(${dp_PKG_BIN} config abi | cut -d: -f1,2):*"
-[ -n "${dp_VITAL}" ] && echo "vital : true"
+case "${dp_WWW:+set}" in
+set) echo "www: \"${dp_WWW%% *}\"" ;;
+esac
+case "${dp_LICENSE:+set}" in
+set) echo "licenses: [ ${dp_LICENSE} ]" ;;
+esac
+case "${dp_USERS:+set}" in
+set) echo "users: [ ${dp_USERS} ]" ;;
+esac
+case "${dp_GROUPS:+set}" in
+set) echo "groups: [ ${dp_GROUPS} ]" ;;
+esac
+case "${dp_NO_ARCH:+set}" in
+set)
+	echo "arch : $(${dp_PKG_BIN} config abi | tr '[:upper:]' '[:lower:]' | cut -d: -f1,2):*"
+	echo "abi : $(${dp_PKG_BIN} config abi | cut -d: -f1,2):*"
+	;;
+esac
+case "${dp_VITAL:+set}" in
+set) echo "vital : true" ;;
+esac
 
 # Then the key/values sections
 echo "deps: { "
@@ -78,7 +92,8 @@ for opt in ${dp_COMPLETE_OPTIONS_LIST}; do
 done
 echo "}"
 
-if [ -n "${dp_PKG_NOTES}" ]; then
+case "${dp_PKG_NOTES:+set}" in
+set)
 	echo "annotations: {"
 	for note in ${dp_PKG_NOTES}; do
 		echo " ${note}: <<EOD"
@@ -86,7 +101,8 @@ if [ -n "${dp_PKG_NOTES}" ]; then
 		echo "EOD"
 	done
 	echo "}"
-fi
+	;;
+esac
 
 # Copy the pkg-descr file
 cp ${dp_DESCR} ${dp_METADIR}/+DESC
@@ -164,12 +180,14 @@ set)
 
 	EOT
 
-	if [ -n "${dp_EXPIRATION_DATE}" ]; then
+	case "${dp_EXPIRATION_DATE:+set}" in
+	set)
 		cat <<-EOT
 		It is scheduled to be removed on or after ${dp_EXPIRATION_DATE}.
 
 		EOT
-	fi
+		;;
+	esac
 	printf 'EOD\n},\n'
 	;;
 esac

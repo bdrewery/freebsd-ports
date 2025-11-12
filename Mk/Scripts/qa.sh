@@ -940,9 +940,10 @@ gemdeps()
 gemfiledeps()
 {
 	# skip check if port does not use ruby at all
-	if [ -z "$USE_RUBY" ]; then
-		return 0
-	fi
+	case "${USE_RUBY:+set}" in
+	set) ;;
+	*) return 0 ;;
+	esac
 
 	# skip check if port is a rubygem-* one; they have no Gemfiles
 	case "${PKGBASE%%-*}" in
@@ -959,7 +960,10 @@ gemfiledeps()
 	while read -r f; do
 
 		# no results presents a blank line from heredoc
-		[ -z "$f" ] && continue
+		case "${f:+set}" in
+		set) ;;
+		*) continue ;;
+		esac
 
 		# if there is no Gemfile everything is fine - stop here
 		[ ! -f "$f" ] && return 0;
@@ -1016,12 +1020,22 @@ license()
 			esac
 		done
 
-		if [ -z "$autoaccept" ]; then
-			warn "License is not auto-accepted, packages will not be built, ports depending on this one will be ignored."
-		fi
-		if [ -z "$pkgmirror" ]; then
-			warn "License does not allow package to be distributed, ports depending on this one will be ignored"
-		fi
+		case "${autoaccept:+set}" in
+		set) ;;
+		*)
+			warn "License is not auto-accepted, packages will" \
+			    "not be built, ports depending on this one will" \
+			    "be ignored."
+			;;
+		esac
+		case "${pkgmirror:+set}" in
+		set) ;;
+		*)
+			warn "License does not allow package to be" \
+			    "distributed, ports depending on this one will" \
+			    "be ignored"
+			;;
+		esac
 	fi
 
 	return 0

@@ -25,9 +25,9 @@ listcontains() {
 	lst=$2
 
 	for elt in ${lst} ; do
-		if [ ${elt} = ${str} ]; then
-			return 0
-		fi
+		case "${elt}" in
+		"${str}") return 0 ;;
+		esac
 	done
 	return 1
 }

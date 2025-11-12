@@ -68,9 +68,8 @@ MKDIR?=			mkdirs() {\
 					fi;\
 					dirs="$${dirs:+$${dirs} }$${dir}";\
 				done;\
-				case "$${dirs:+set}" in\
-				set) ;;\
-				*) return 0 ;;\
+				case "$${dirs}" in\
+				"") return 0 ;;\
 				esac;\
 				${MKDIR_CMD} $${dirs};\
 			};\

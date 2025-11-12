@@ -54,27 +54,13 @@ licenselogic: ${dp_LICENSE_COMB:-single}
 EOT
 
 # Then, the optional bits
-case "${dp_WWW:+set}" in
-set) echo "www: \"${dp_WWW%% *}\"" ;;
-esac
-case "${dp_LICENSE:+set}" in
-set) echo "licenses: [ ${dp_LICENSE} ]" ;;
-esac
-case "${dp_USERS:+set}" in
-set) echo "users: [ ${dp_USERS} ]" ;;
-esac
-case "${dp_GROUPS:+set}" in
-set) echo "groups: [ ${dp_GROUPS} ]" ;;
-esac
-case "${dp_NO_ARCH:+set}" in
-set)
-	echo "arch : $(${dp_PKG_BIN} config abi | tr '[:upper:]' '[:lower:]' | cut -d: -f1,2):*"
-	echo "abi : $(${dp_PKG_BIN} config abi | cut -d: -f1,2):*"
-	;;
-esac
-case "${dp_VITAL:+set}" in
-set) echo "vital : true" ;;
-esac
+[ -n "${dp_WWW:+set}" ] && echo "www: \"${dp_WWW%% *}\""
+[ -n "${dp_LICENSE:+set}" ] && echo "licenses: [ ${dp_LICENSE} ]"
+[ -n "${dp_USERS:+set}" ] && echo "users: [ ${dp_USERS} ]"
+[ -n "${dp_GROUPS:+set}" ] && echo "groups: [ ${dp_GROUPS} ]"
+[ -n "${dp_NO_ARCH:+set}" ] && echo "arch : $(${dp_PKG_BIN} config abi | tr '[:upper:]' '[:lower:]' | cut -d: -f1,2):*"
+[ -n "${dp_NO_ARCH:+set}" ] && echo "abi : $(${dp_PKG_BIN} config abi | cut -d: -f1,2):*"
+[ -n "${dp_VITAL:+set}" ] && echo "vital : true"
 
 # Then the key/values sections
 echo "deps: { "
@@ -92,8 +78,7 @@ for opt in ${dp_COMPLETE_OPTIONS_LIST}; do
 done
 echo "}"
 
-case "${dp_PKG_NOTES:+set}" in
-set)
+if [ -n "${dp_PKG_NOTES:+set}" ]; then
 	echo "annotations: {"
 	for note in ${dp_PKG_NOTES}; do
 		echo " ${note}: <<EOD"
@@ -101,8 +86,7 @@ set)
 		echo "EOD"
 	done
 	echo "}"
-	;;
-esac
+fi
 
 # Copy the pkg-descr file
 cp ${dp_DESCR} ${dp_METADIR}/+DESC
@@ -115,9 +99,9 @@ for stage in INSTALL DEINSTALL; do
 		[ -f "${output}" ] && output_files="${output_files:+${output_files} }${output}"
 	done
 done
-case "${output_files:+set}" in
-set) rm -f ${output_files} ;;
-esac
+if [ -n "${output_files:+set}" ]; then
+	rm -f ${output_files}
+fi
 for stage in INSTALL DEINSTALL; do
 	for prepost in '' PRE POST; do
 		eval files="\${dp_PKG${prepost}${stage}}"
@@ -169,8 +153,7 @@ ports@FreeBSD.org)
 	;;
 esac
 
-case "${dp_DEPRECATED:+set}" in
-set)
+if [ -n "${dp_DEPRECATED:+set}" ]; then
 	cat <<-EOT
 	{ message=<<EOD
 	===>   NOTICE:
@@ -181,15 +164,12 @@ set)
 
 	EOT
 
-	case "${dp_EXPIRATION_DATE:+set}" in
-	set)
+	if [ -n "${dp_EXPIRATION_DATE:+set}" ]; then
 		cat <<-EOT
 		It is scheduled to be removed on or after ${dp_EXPIRATION_DATE}.
 
 		EOT
-		;;
-	esac
+	fi
 	printf 'EOD\n},\n'
-	;;
-esac
+fi
 echo ']'

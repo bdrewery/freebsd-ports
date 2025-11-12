@@ -115,8 +115,9 @@ for stage in INSTALL DEINSTALL; do
 		[ -f "${output}" ] && output_files="${output_files:+${output_files} }${output}"
 	done
 done
-[ -n "${output_files}" ] && rm -f ${output_files}
-
+case "${output_files:+set}" in
+set) rm -f ${output_files} ;;
+esac
 for stage in INSTALL DEINSTALL; do
 	for prepost in '' PRE POST; do
 		eval files="\${dp_PKG${prepost}${stage}}"

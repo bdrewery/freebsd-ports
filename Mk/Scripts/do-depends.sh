@@ -177,18 +177,14 @@ for _line in ${dp_RAWDEPENDS} ; do
 		fetch) target=checksum ;;
 		*) target=${last} ;;
 		esac
-		case "${dp_DEPENDS_PRECLEAN:+set}" in
-		set)
+		if [ -n "${dp_DEPENDS_PRECLEAN:+set}" ]; then
 			target="clean ${target}"
 			depends_args="${depends_args:+${depends_args} }NOCLEANDEPENDS=yes"
-			;;
-		esac
-		case "${dp_DEPENDS_CLEAN:+set}" in
-		set)
+		fi
+		if [ -n "${dp_DEPENDS_CLEAN:+set}" ]; then
 			target="${target} clean"
 			depends_args="${depends_args:+${depends_args} }NOCLEANDEPENDS=yes"
-			;;
-		esac
+		fi
 	fi
 
 	case ${dp_DEPTYPE} in

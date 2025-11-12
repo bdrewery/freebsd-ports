@@ -85,13 +85,11 @@ shebangonefile() {
 		;;
 	esac
 
-	case "${badinterp:+set}" in
-	set)
+	if [ -n "${badinterp:+set}" ]; then
 		err "'${badinterp}' is an invalid shebang you need" \
 		    "USES=shebangfix for '${f#${STAGEDIR}${PREFIX}/}'"
 		rc=1
-		;;
-	esac
+	fi
 
 	return ${rc}
 }
@@ -103,9 +101,8 @@ shebang() {
 
 	while read -r f; do
 		# No results presents a blank line from heredoc.
-		case "${f:+set}" in
-		set) ;;
-		*) continue ;;
+		case "${f}" in
+		"") continue ;;
 		esac
 		shebangonefile "${f}" || rc=1
 	# Use heredoc to avoid losing rc from find|while subshell
@@ -165,9 +162,8 @@ symlinks() {
 	# retain spaces in filenames.
 	while read -r l; do
 		# No results presents a blank line from heredoc.
-		case "${l:+set}" in
-		set) ;;
-		*) continue ;;
+		case "${l}" in
+		"") continue ;;
 		esac
 		read -r link
 		case "${link}" in
@@ -200,9 +196,8 @@ paths() {
 
 	while read -r f; do
 		# No results presents a blank line from heredoc.
-		case "${f:+set}" in
-		set) ;;
-		*) continue ;;
+		case "${f}" in
+		"") continue ;;
 		esac
 		# Ignore false-positive/harmless files
 		case "${f}" in
@@ -223,9 +218,8 @@ paths() {
 # For now do not raise an error, just warnings
 stripped() {
 	[ -x /usr/bin/file ] || return # this is fatal
-	case "${STRIP:+set}" in
-	set) ;;
-	*) return 0 ;;
+	case "${STRIP}" in
+	"") return 0 ;;
 	esac
 	# Split file and result into 2 lines and read separately to ensure
 	# files with spaces are kept intact.
@@ -240,14 +234,14 @@ stripped() {
 }
 
 desktopfileutils() {
-	case "${USESDESKTOPFILEUTILS:+set}" in
-	set)
-		grep -q MimeType= ${STAGEDIR}${PREFIX}/share/applications/*.desktop 2>/dev/null ||
-		warn "you may not need USES=desktop-file-utils"
-		;;
-	*)
+	case "${USESDESKTOPFILEUTILS}" in
+	"")
 		grep -q MimeType= ${STAGEDIR}${PREFIX}/share/applications/*.desktop 2>/dev/null &&
 		warn "you need USES=desktop-file-utils"
+		;;
+	*)
+		grep -q MimeType= ${STAGEDIR}${PREFIX}/share/applications/*.desktop 2>/dev/null ||
+		warn "you may not need USES=desktop-file-utils"
 		;;
 	esac
 	return 0
@@ -283,19 +277,17 @@ suidfiles() {
 	filelist=$(find ${STAGEDIR} -type f \
 		\( -perm -u+x -or -perm -g+x -or -perm -o+x \) \
 		\( -perm -u+s -or -perm -g+s \))
-	case "${filelist:+set}" in
-	set)
+	if [ -n "${filelist:+set}" ]; then
 		warn "setuid files in the stage directory (are these necessary?):"
 		ls -liTd ${filelist}
-		;;
-	esac
+	fi
 	return 0
 }
 
 libtool() {
-	case "${USESLIBTOOL:+set}" in
-	set) return 0 ;;
-	esac
+	if [ -n "${USESLIBTOOL:+set}" ]; then
+		return 0
+	fi
 	find ${STAGEDIR} -name '*.la' | while read -r f; do
 		if grep -q 'libtool library' "${f}"; then
 			err ".la libraries found, port needs USES=libtool"
@@ -312,9 +304,8 @@ libperl() {
 		files=0
 		while read -r f; do
 			# No results presents a blank line from heredoc.
-			case "${f:+set}" in
-			set) ;;
-			*) continue ;;
+			case "${f}" in
+			"") continue ;;
 			esac
 			files=$((files+1))
 			found=$(readelf -d ${f} | awk "BEGIN {libperl=1}
@@ -709,15 +700,13 @@ proxydeps() {
 	# Some .so are not executable, but we want to check them too.
 	while read -r file; do
 		# No results presents a blank line from heredoc.
-		case "${file:+set}" in
-		set) ;;
-		*) continue ;;
+		case "${file}" in
+		"") continue ;;
 		esac
 		while read -r dep_file; do
 			# No results presents a blank line from heredoc.
-			case "${dep_file:+set}" in
-			set) ;;
-			*) continue ;;
+			case "${dep_file}" in
+			"") continue ;;
 			esac
 			# Skip files we already checked.
 			if listcontains ${dep_file} "${already}"; then
@@ -743,13 +732,10 @@ proxydeps() {
 				if ! listcontains ${dep_file_pkg} "${LIB_RUN_DEPENDS} ${PKGORIGIN}"; then
 					# If the package has a flavor, check that the dependency is not on that particular flavor.
 					flavor=$(pkg annotate -q -S "$(pkg which -q "${dep_file}")" flavor)
-					case "${flavor:+set}" in
-					set)
-						if listcontains ${dep_file_pkg}@${flavor} "${LIB_RUN_DEPENDS} ${PKGORIGIN}"; then
-							continue
-						fi
-						;;
-					esac
+					if [ -n "${flavor:+set}" ] &&
+					    listcontains ${dep_file_pkg}@${flavor} "${LIB_RUN_DEPENDS} ${PKGORIGIN}"; then
+						continue
+					fi
 					err "${file} is linked to ${dep_file} from ${dep_file_pkg} but it is not declared as a dependency"
 					proxydeps_suggest_uses ${dep_file_pkg} ${dep_file}
 					rc=1
@@ -783,9 +769,8 @@ proxydeps() {
 		fi
 	done
 
-	case "${PROXYDEPS_FATAL:+set}" in
-	set) ;;
-	*) return 0 ;;
+	case "${PROXYDEPS_FATAL}" in
+	"") return 0 ;;
 	esac
 
 	return ${rc}
@@ -795,9 +780,8 @@ sonames() {
 	[ ! -d ${STAGEDIR}${PREFIX}/lib -o -n "${BUNDLE_LIBS}" ] && return 0
 	while read -r f; do
 		# No results presents a blank line from heredoc.
-		case "${f:+set}" in
-		set) ;;
-		*) continue ;;
+		case "${f}" in
+		"") continue ;;
 		esac
 		# Ignore symlinks
 		[ -f "${f}" -a ! -L "${f}" ] || continue
@@ -844,8 +828,7 @@ perlcore() {
 	[ -x "${LOCALBASE}/bin/corelist" ] || return 0
 	for dep in ${UNIFIED_DEPENDS}; do
 		portname=$(expr "${dep}" : ".*/p5-\(.*\)")
-		case "${portname:+set}" in
-		set)
+		if [ -n "${portname:+set}" ]; then
 			gotsome=1
 			module=$(perlcore_port_module_mapping "${portname}")
 			version=$(expr "${dep}" : ".*>=*\([^:<]*\)")
@@ -877,11 +860,9 @@ perlcore() {
 			done <<-EOT
 			$(${LOCALBASE}/bin/corelist "${module}"|tail -1)
 			EOT
-			;;
-		esac
+		fi
 	done
-	case "${gotsome:+set}" in
-	set)
+	if [ -n "${gotsome:+set}" ]; then
 		if ! pkg info -e devel/p5-Module-CoreList; then
 			notice "You have some Perl modules as dependencies" \
 			    "but you do not have devel/p5-Module-CoreList" \
@@ -889,34 +870,29 @@ perlcore() {
 			    "results when using it, especially with older" \
 			    "Perl versions."
 		fi
-		;;
-	esac
+	fi
 }
 
 no_arch() {
-	case "${NO_ARCH:+set}" in
-	set) ;;
-	*) return ;;
+	case "${NO_ARCH}" in
+	"") return ;;
 	esac
 	rc=0
 	while read -r f; do
-		case "${f:+set}" in
-		set) ;;
-		*) continue ;;
+		case "${f}" in
+		"") continue ;;
 		esac
-		case "${NO_ARCH_IGNORE:+set}" in
-		set)
+		if [ -n "${NO_ARCH_IGNORE:+set}" ]; then
 			skip=
 			for blacklist in $NO_ARCH_IGNORE; do
 				case $f in
 					*$blacklist) skip=1; break;;
 				esac
 			done
-			case "${skip:+set}" in
-			set) continue ;;
-			esac
-			;;
-		esac
+			if [ -n "${skip}" ]; then
+				continue
+			fi
+		fi
 		err "'${f#.}' is a architecture specific binary file and you have set NO_ARCH.  Either remove NO_ARCH or add '$(basename $f)' to NO_ARCH_IGNORE."
 		rc=1
 	done <<-EOF
@@ -937,8 +913,7 @@ gemdeps()
 		# In the heredoc, ${PORTNAME} comes from the environment, not
 		# to be confused with ${portname}
 		while read -r l; do
-			case "${l:+set}" in
-			set)
+			if [ -n "${l:+set}" ]; then
 				name=${l%% *}
 				vers=${l#* }
 				while read -r v; do
@@ -959,8 +934,7 @@ gemdeps()
 					vers=$(echo "${vers}"|cut -d '"' -f3-)
 				done)
 				EOF
-				;;
-			esac
+			fi
 		done <<-EOF
 		$(grep -a 's.add_runtime_dependency' ${STAGEDIR}${PREFIX}/lib/ruby/gems/*/specifications/${PORTNAME}-*.gemspec \
 			| sed 's|.*<\(.*\)>.*\[\(.*\)\])|\1 \2|' \
@@ -979,9 +953,8 @@ gemdeps()
 gemfiledeps()
 {
 	# skip check if port does not use ruby at all
-	case "${USE_RUBY:+set}" in
-	set) ;;
-	*) return 0 ;;
+	case "${USE_RUBY}" in
+	"") return 0 ;;
 	esac
 
 	# skip check if port is a rubygem-* one; they have no Gemfiles
@@ -999,9 +972,8 @@ gemfiledeps()
 	while read -r f; do
 
 		# no results presents a blank line from heredoc
-		case "${f:+set}" in
-		set) ;;
-		*) continue ;;
+		case "${f}" in
+		"") continue ;;
 		esac
 
 		# if there is no Gemfile everything is fine - stop here
@@ -1024,8 +996,7 @@ flavors()
 {
 	local rc pkgnames uniques
 	rc=0
-	case "${FLAVOR:+set}" in
-	set)
+	if [ -n "${FLAVOR:+set}" ]; then
 		pkgnames=$(make -C "${CURDIR}" flavors-package-names|sort)
 		uniques=$(echo "${pkgnames}"|uniq)
 		case "${pkgnames}" in
@@ -1037,8 +1008,7 @@ flavors()
 			rc=1
 			;;
 		esac
-		;;
-	esac
+	fi
 	return ${rc}
 }
 
@@ -1059,17 +1029,15 @@ license()
 			esac
 		done
 
-		case "${autoaccept:+set}" in
-		set) ;;
-		*)
+		case "${autoaccept}" in
+		"")
 			warn "License is not auto-accepted, packages will" \
 			    "not be built, ports depending on this one will" \
 			    "be ignored."
 			;;
 		esac
-		case "${pkgmirror:+set}" in
-		set) ;;
-		*)
+		case "${pkgmirror}" in
+		"")
 			warn "License does not allow package to be" \
 			    "distributed, ports depending on this one will" \
 			    "be ignored"
@@ -1117,13 +1085,11 @@ depends_blacklist()
 				;;
 		esac
 
-		case "${instead:+set}" in
-		set)
+		if [ -n "${instead:+set}" ]; then
 			err "$origin should not be depended upon. Instead," \
 			    "use $instead."
 			rc=1
-			;;
-		esac
+		fi
 	done
 
 	return $rc
@@ -1168,9 +1134,9 @@ ret=0
 cd ${STAGEDIR} || exit 1
 for check in ${checks}; do
 	eval check_test="\$IGNORE_QA_$check"
-	case "${check_test:+set}" in
-	set) warn "Ignoring $check QA test" ;;
-	*) ${check} || ret=1 ;;
+	case "${check_test}" in
+	"") ${check} || ret=1 ;;
+	*) warn "Ignoring $check QA test" ;;
 	esac
 done
 

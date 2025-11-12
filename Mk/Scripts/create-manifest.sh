@@ -131,7 +131,8 @@ for message in ${dp_PKGMESSAGES}; do
 done
 
 # Try and keep these messages in sync with check-deprecated
-if [ ${dp_MAINTAINER} = "ports@FreeBSD.org" ]; then
+case "${dp_MAINTAINER}" in
+ports@FreeBSD.org)
 	cat <<-EOT
 	{ message=<<EOD
 	===>   NOTICE:
@@ -148,9 +149,11 @@ if [ ${dp_MAINTAINER} = "ports@FreeBSD.org" ]; then
 	EOD
 	},
 	EOT
-fi
+	;;
+esac
 
-if [ -n "${dp_DEPRECATED}" ]; then
+case "${dp_DEPRECATED:+set}" in
+set)
 	cat <<-EOT
 	{ message=<<EOD
 	===>   NOTICE:
@@ -168,5 +171,6 @@ if [ -n "${dp_DEPRECATED}" ]; then
 		EOT
 	fi
 	printf 'EOD\n},\n'
-fi
+	;;
+esac
 echo ']'

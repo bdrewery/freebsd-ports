@@ -125,6 +125,7 @@ baselibs() {
 	pkg|pkg-devel) return ;;
 	esac
 
+	found_openssl=0
 	while read -r f; do
 		case ${f} in
 		File:\ .*)
@@ -147,9 +148,9 @@ baselibs() {
 	EOF
 
 	if ! list_stagedir_elfs | egrep -q 'lib(crypto|ssl).so*'; then
-		case "${USESSSL:+set}.${found_openssl:+set}" in
-		"".set) warn "you need USES=ssl" ;;
-		set."")	warn "you may not need USES=ssl" ;
+		case "${USESSSL:+set}.${found_openssl}" in
+		"".1) warn "you need USES=ssl" ;;
+		set.0) warn "you may not need USES=ssl" ;
 		esac
 	fi
 	return ${rc}
@@ -199,7 +200,10 @@ paths() {
 
 	while read -r f; do
 		# No results presents a blank line from heredoc.
-		[ -z "${f}" ] && continue
+		case "${f:+set}" in
+		set) ;;
+		*) continue ;;
+		esac
 		# Ignore false-positive/harmless files
 		case "${f}" in
 			*/lib/ruby/gems/*) continue ;;
@@ -219,7 +223,10 @@ paths() {
 # For now do not raise an error, just warnings
 stripped() {
 	[ -x /usr/bin/file ] || return # this is fatal
-	[ -n "${STRIP}" ] || return 0
+	case "${STRIP:+set}" in
+	set) ;;
+	*) return 0 ;;
+	esac
 	# Split file and result into 2 lines and read separately to ensure
 	# files with spaces are kept intact.
 	# Using readelf -h ... /ELF Header:/ will match on all ELF files.
@@ -233,13 +240,16 @@ stripped() {
 }
 
 desktopfileutils() {
-	if [ -z "${USESDESKTOPFILEUTILS}" ]; then
-		grep -q MimeType= ${STAGEDIR}${PREFIX}/share/applications/*.desktop 2>/dev/null &&
-		warn "you need USES=desktop-file-utils"
-	else
+	case "${USESDESKTOPFILEUTILS:+set}" in
+	set)
 		grep -q MimeType= ${STAGEDIR}${PREFIX}/share/applications/*.desktop 2>/dev/null ||
 		warn "you may not need USES=desktop-file-utils"
-	fi
+		;;
+	*)
+		grep -q MimeType= ${STAGEDIR}${PREFIX}/share/applications/*.desktop 2>/dev/null &&
+		warn "you need USES=desktop-file-utils"
+		;;
+	esac
 	return 0
 }
 
@@ -260,11 +270,10 @@ sharedmimeinfo() {
 		found=1
 		break
 	done
-	if [ -z "${USESSHAREDMIMEINFO}" -a ${found} -eq 1 ]; then
-		warn "you need USES=shared-mime-info"
-	elif [ -n "${USESSHAREDMIMEINFO}" -a ${found} -eq 0 ]; then
-		warn "you may not need USES=shared-mime-info"
-	fi
+	case "${USESSHAREDMIMEINFO:+set}.${found}" in
+	"".1) warn "you need USES=shared-mime-info" ;;
+	set.0) warn "you may not need USES=shared-mime-info" ;;
+	esac
 	return 0
 }
 
@@ -274,33 +283,39 @@ suidfiles() {
 	filelist=$(find ${STAGEDIR} -type f \
 		\( -perm -u+x -or -perm -g+x -or -perm -o+x \) \
 		\( -perm -u+s -or -perm -g+s \))
-	if [ -n "${filelist}" ]; then
+	case "${filelist:+set}" in
+	set)
 		warn "setuid files in the stage directory (are these necessary?):"
 		ls -liTd ${filelist}
-	fi
+		;;
+	esac
 	return 0
 }
 
 libtool() {
-	if [ -z "${USESLIBTOOL}" ]; then
-		find ${STAGEDIR} -name '*.la' | while read -r f; do
-			if grep -q 'libtool library' "${f}"; then
-				err ".la libraries found, port needs USES=libtool"
-				return 1
-			fi
-		done
-		# The return above continues here.
-	fi
+	case "${USESLIBTOOL:+set}" in
+	set) return 0 ;;
+	esac
+	find ${STAGEDIR} -name '*.la' | while read -r f; do
+		if grep -q 'libtool library' "${f}"; then
+			err ".la libraries found, port needs USES=libtool"
+			return 1
+		fi
+	done
+	# The return above continues here.
 }
 
 libperl() {
 	local has_some_libperl_so files found
-	if [ -n "${SITE_ARCH_REL}" -a -d "${STAGEDIR}${PREFIX}/${SITE_ARCH_REL}" ]; then
+	if [ -n "${SITE_ARCH_REL:+set}" -a -d "${STAGEDIR}${PREFIX}/${SITE_ARCH_REL}" ]; then
 		has_some_libperl_so=0
 		files=0
 		while read -r f; do
 			# No results presents a blank line from heredoc.
-			[ -z "${f}" ] && continue
+			case "${f:+set}" in
+			set) ;;
+			*) continue ;;
+			esac
 			files=$((files+1))
 			found=$(readelf -d ${f} | awk "BEGIN {libperl=1}
 				/NEEDED.*${LIBPERL}/  { libperl = 0 }
@@ -329,14 +344,20 @@ libperl() {
 }
 
 prefixvar() {
-	if [ ${PREFIX} != ${LINUXBASE} -a -d ${STAGEDIR}${PREFIX}/var ]; then
-		warn "port uses ${PREFIX}/var instead of /var"
-	fi
+	case "${PREFIX}" in
+	"${LINUXBASE}") ;;
+	*)
+		if [ -d ${STAGEDIR}${PREFIX}/var ]; then
+			warn "port uses ${PREFIX}/var instead of /var"
+		fi
+		;;
+	esac
 }
 
 terminfo() {
 	local f found
 
+	found=0
 	for f in ${STAGEDIR}${PREFIX}/share/misc/*.terminfo; do
 		case "${f}" in
 		"${STAGEDIR}${PREFIX}/share/misc/*.terminfo")
@@ -357,11 +378,10 @@ terminfo() {
 		found=1
 		break
 	done
-	if [ -z "${USESTERMINFO}" -a -n "${found}" ]; then
-		warn "you need USES=terminfo"
-	elif [ -n "${USESTERMINFO}" -a -z "${found}" ]; then
-		warn "you may not need USES=terminfo"
-	fi
+	case "${USESTERMINFO:+set}.${found}" in
+	"".1) warn "you need USES=terminfo" ;;
+	set.0) warn "you may not need USES=terminfo" ;;
+	esac
 	return 0
 }
 

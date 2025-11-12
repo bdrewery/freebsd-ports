@@ -1078,10 +1078,13 @@ depends_blacklist()
 				;;
 		esac
 
-		if [ -n "${instead}" ]; then
-			err "$origin should not be depended upon. Instead, use $instead."
+		case "${instead:+set}" in
+		set)
+			err "$origin should not be depended upon. Instead," \
+			    "use $instead."
 			rc=1
-		fi
+			;;
+		esac
 	done
 
 	return $rc
@@ -1126,11 +1129,10 @@ ret=0
 cd ${STAGEDIR} || exit 1
 for check in ${checks}; do
 	eval check_test="\$IGNORE_QA_$check"
-	if [ -z "${check_test}" ]; then
-		${check} || ret=1
-	else
-		warn "Ignoring $check QA test"
-	fi
+	case "${check_test:+set}" in
+	set) warn "Ignoring $check QA test" ;;
+	*) ${check} || ret=1 ;;
+	esac
 done
 
 exit ${ret}

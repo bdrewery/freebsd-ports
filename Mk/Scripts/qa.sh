@@ -85,10 +85,13 @@ shebangonefile() {
 		;;
 	esac
 
-	if [ -n "${badinterp}" ]; then
-		err "'${badinterp}' is an invalid shebang you need USES=shebangfix for '${f#${STAGEDIR}${PREFIX}/}'"
+	case "${badinterp:+set}" in
+	set)
+		err "'${badinterp}' is an invalid shebang you need" \
+		    "USES=shebangfix for '${f#${STAGEDIR}${PREFIX}/}'"
 		rc=1
-	fi
+		;;
+	esac
 
 	return ${rc}
 }
@@ -100,7 +103,10 @@ shebang() {
 
 	while read -r f; do
 		# No results presents a blank line from heredoc.
-		[ -z "${f}" ] && continue
+		case "${f:+set}" in
+		set) ;;
+		*) continue ;;
+		esac
 		shebangonefile "${f}" || rc=1
 	# Use heredoc to avoid losing rc from find|while subshell
 	done <<-EOF
@@ -141,11 +147,10 @@ baselibs() {
 	EOF
 
 	if ! list_stagedir_elfs | egrep -q 'lib(crypto|ssl).so*'; then
-		if [ -z "${USESSSL}" -a -n "${found_openssl}" ]; then
-			warn "you need USES=ssl"
-		elif [ -n "${USESSSL}" -a -z "${found_openssl}" ]; then
-			warn "you may not need USES=ssl"
-		fi
+		case "${USESSSL:+set}.${found_openssl:+set}" in
+		"".set) warn "you need USES=ssl" ;;
+		set."")	warn "you may not need USES=ssl" ;
+		esac
 	fi
 	return ${rc}
 }
@@ -159,7 +164,10 @@ symlinks() {
 	# retain spaces in filenames.
 	while read -r l; do
 		# No results presents a blank line from heredoc.
-		[ -z "${l}" ] && continue
+		case "${l:+set}" in
+		set) ;;
+		*) continue ;;
+		esac
 		read -r link
 		case "${link}" in
 			${STAGEDIR}*)

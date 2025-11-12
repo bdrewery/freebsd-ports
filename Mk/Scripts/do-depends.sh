@@ -23,20 +23,26 @@ install_depends()
 	target=$2
 	subpkg=$3
 	depends_args=$4
-	if [ -z "${dp_USE_PACKAGE_DEPENDS}" -a -z "${dp_USE_PACKAGE_DEPENDS_ONLY}" ]; then
+	case "${dp_USE_PACKAGE_DEPENDS:+set}.${dp_USE_PACKAGE_DEPENDS_ONLY:+set}" in
+	*set*) ;;
+	*)
 		INSTALLS_DEPENDS=1 MAKEFLAGS="${dp_MAKEFLAGS}" ${dp_MAKE} -C ${origin} ${target} ${depends_args}
 		return 0
-	fi
+		;;
+	esac
 
-	if [ -z "${subpkg}" ]; then
-		port_var_fetch "${origin}" "${depends_args}" \
-			PKGFILE pkgfile \
-			PKGBASE pkgbase
-	else
+	case "${subpkg:+set}" in
+	set)
 		port_var_fetch "${origin}" "${depends_args}" \
 			PKGFILE.${subpkg} pkgfile \
 			PKGBASE.${subpkg} pkgbase
-	fi
+		;;
+	*)
+		port_var_fetch "${origin}" "${depends_args}" \
+			PKGFILE pkgfile \
+			PKGBASE pkgbase
+		;;
+	esac
 
 	if [ -r "${pkgfile}" -a "${target}" = "${dp_DEPENDS_TARGET}" ]; then
 		echo "===>   Installing existing package ${pkgfile}"
@@ -91,10 +97,13 @@ find_lib()
 {
 	echo -n "===>   ${dp_PKGNAME} depends on shared library: $1"
 	libfile=$(env -i PATH="${PATH}" LIB_DIRS="${dp_LIB_DIRS}" LOCALBASE="${dp_LOCALBASE}" ${dp_SH} ${dp_SCRIPTSDIR}/find-lib.sh $1)
-	if [ -z "${libfile}" ]; then
+	case "${libfile:+set}" in
+	set) ;;
+	*)
 		echo " - not found"
 		return 1
-	fi
+		;;
+	esac
 	echo " - found (${libfile})"
 }
 
@@ -118,17 +127,23 @@ for _line in ${dp_RAWDEPENDS} ; do
 	origin=$2
 	last=${3:-}
 
-	if [ -z "${pattern}" ]; then
+	case "${pattern:+set}" in
+	set) ;;
+	*)
 		echo "Error: there is an empty port dependency in ${dp_DEPTYPE}" >&2
 		err=1
 		continue
-	fi
+		;;
+	esac
 
-	if [ -z "${origin}" ]; then
+	case "${origin:+set}" in
+	set) ;;
+	*)
 		echo "Error: a dependency has an empty origin in ${dp_DEPTYPE}" >&2
 		err=1
 		continue
-	fi
+		;;
+	esac
 
 	subpkg=
 	case "${origin}" in
@@ -159,23 +174,28 @@ for _line in ${dp_RAWDEPENDS} ; do
 
 	depends_args="${dp_DEPENDS_ARGS}"
 	target=${dp_DEPENDS_TARGET}
-	if [ -n "${last}" ]; then
+	case "${last:+set}" in
+	set)
 		# In case we depend on the fetch stage, actually run checksum,
 		# this prevent a MITM attack.
-		if [ "${last}" = "fetch" ]; then
-			target=checksum
-		else
-			target=${last}
-		fi
-		if [ -n "${dp_DEPENDS_PRECLEAN}" ]; then
+		case "${last}" in
+		fetch) target=checksum ;;
+		*) target=${last} ;;
+		esac
+		case "${dp_DEPENDS_PRECLEAN:+set}" in
+		set)
 			target="clean ${target}"
 			depends_args="${depends_args:+${depends_args} }NOCLEANDEPENDS=yes"
-		fi
-		if [ -n "${dp_DEPENDS_CLEAN}" ]; then
+			;;
+		esac
+		case "${dp_DEPENDS_CLEAN:+set}" in
+		set)
 			target="${target} clean"
 			depends_args="${depends_args:+${depends_args} }NOCLEANDEPENDS=yes"
-		fi
-	fi
+			;;
+		esac
+		;;
+	esac
 
 	case ${dp_DEPTYPE} in
 	  LIB_DEPENDS)
@@ -198,7 +218,10 @@ for _line in ${dp_RAWDEPENDS} ; do
 	if ${fct} "${pattern}" ; then
 		continue
 	fi
-	[ ${pattern} = "/nonexistent" ] || anynotfound=1
+	case "${pattern}" in
+	/nonexistent) ;;
+	*) anynotfound=1 ;;
+	esac
 
 	if [ ! -f "${origin}/Makefile" ]; then
 		echo "Error a dependency refers to a non existing origin: ${origin} in ${dp_DEPTYPE}" >&2
@@ -209,7 +232,10 @@ for _line in ${dp_RAWDEPENDS} ; do
 	# Now actually install the dependencies
 	install_depends "${origin}" "${target}" "${subpkg}" "${depends_args}"
 	# Recheck if the installed dependency validates the pattern except for /nonexistent
-	[ "${fct}" = "false" ] || ${fct} "${pattern}"
+	case "${fct}" in
+	false) ;;
+	*) ${fct} "${pattern}" ;;
+	esac
 	echo "===>   Returning to build of ${dp_PKGNAME}"
 done
 
@@ -218,8 +244,10 @@ if [ $err -eq 1 ]; then
 	exit 1
 fi
 
-if [ -n "${dp_STRICT_DEPENDS}" -a ${anynotfound} -eq 1 ]; then \
+case "${dp_STRICT_DEPENDS:+set}.${anynotfound}" in
+set.1)
 	echo "===>   STRICT_DEPENDS set - Not installing missing dependencies."
 	echo "       This means a dependency is wrong since it was not satisfied in the ${dp_DEPTYPE} phase."
 	exit 1
-fi
+	;;
+esac

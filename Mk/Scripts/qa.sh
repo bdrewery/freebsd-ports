@@ -700,8 +700,8 @@ proxydeps() {
 			if listcontains ${dep_file} "${already}"; then
 				continue
 			fi
-			if dep_file_pkg="$(pkg which -qo ${dep_file} \
-			    2>/dev/null)"; then
+			if pkg which -q ${dep_file} > /dev/null 2>&1; then
+				dep_file_pkg=$(pkg which -qo ${dep_file})
 				# Check that the .so we need has a SONAME
 				case "${dep_file_pkg}" in
 				"${PKGORIGIN}") ;;

@@ -713,11 +713,13 @@ proxydeps() {
 				if ! listcontains ${dep_file_pkg} "${LIB_RUN_DEPENDS} ${PKGORIGIN}"; then
 					# If the package has a flavor, check that the dependency is not on that particular flavor.
 					flavor=$(pkg annotate -q -S "$(pkg which -q "${dep_file}")" flavor)
-					if [ -n "${flavor}" ]; then
+					case "${flavor:+set}" in
+					set)
 						if listcontains ${dep_file_pkg}@${flavor} "${LIB_RUN_DEPENDS} ${PKGORIGIN}"; then
 							continue
 						fi
-					fi
+						;;
+					esac
 					err "${file} is linked to ${dep_file} from ${dep_file_pkg} but it is not declared as a dependency"
 					proxydeps_suggest_uses ${dep_file_pkg} ${dep_file}
 					rc=1
@@ -803,7 +805,8 @@ perlcore() {
 	[ -x "${LOCALBASE}/bin/corelist" ] || return 0
 	for dep in ${UNIFIED_DEPENDS}; do
 		portname=$(expr "${dep}" : ".*/p5-\(.*\)")
-		if [ -n "${portname}" ]; then
+		case "${portname:+set}" in
+		set)
 			gotsome=1
 			module=$(perlcore_port_module_mapping "${portname}")
 			version=$(expr "${dep}" : ".*>=*\([^:<]*\)")
@@ -835,27 +838,46 @@ perlcore() {
 			done <<-EOT
 			$(${LOCALBASE}/bin/corelist "${module}"|tail -1)
 			EOT
-		fi
+			;;
+		esac
 	done
-	if [ -n "${gotsome}" ] && ! pkg info -e devel/p5-Module-CoreList; then
-		notice "You have some Perl modules as dependencies but you do not have devel/p5-Module-CoreList installed, the perlcore QA check gets better results when using it, especially with older Perl versions."
-	fi
+	case "${gotsome:+set}" in
+	set)
+		if ! pkg info -e devel/p5-Module-CoreList; then
+			notice "You have some Perl modules as dependencies" \
+			    "but you do not have devel/p5-Module-CoreList" \
+			    "installed, the perlcore QA check gets better" \
+			    "results when using it, especially with older" \
+			    "Perl versions."
+		fi
+		;;
+	esac
 }
 
 no_arch() {
-	[ -z "$NO_ARCH" ] && return
+	case "${NO_ARCH:+set}" in
+	set) ;;
+	*) return ;;
+	esac
 	rc=0
 	while read -r f; do
-		[ -z "$f" ] && continue
-		if [ -n "$NO_ARCH_IGNORE" ]; then
+		case "${f:+set}" in
+		set) ;;
+		*) continue ;;
+		esac
+		case "${NO_ARCH_IGNORE:+set}" in
+		set)
 			skip=
 			for blacklist in $NO_ARCH_IGNORE; do
 				case $f in
 					*$blacklist) skip=1; break;;
 				esac
 			done
-			[ "$skip" ] && continue
-		fi
+			case "${skip:+set}" in
+			set) continue ;;
+			esac
+			;;
+		esac
 		err "'${f#.}' is a architecture specific binary file and you have set NO_ARCH.  Either remove NO_ARCH or add '$(basename $f)' to NO_ARCH_IGNORE."
 		rc=1
 	done <<-EOF

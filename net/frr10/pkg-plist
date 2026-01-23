@@ -332,4 +332,3 @@ share/yang/ietf-netconf-with-defaults.yang
 share/yang/ietf-netconf.yang
 share/yang/ietf-routing-types.yang
 share/yang/ietf-srv6-types.yang
-@dir(frr,frr,755) /var/run/frr

@@ -192,6 +192,7 @@ case "${frr_cmd}" in
 			if [ -n "${frr_extralibs_path}" ]; then
 				/sbin/ldconfig -m ${frr_extralibs_path}
 			fi
+			install -m 755 -o frr -g frr -d /var/run/frr
 			if [ -x %%PREFIX%%/etc/rc.d/watchfrr ]; then
 				echo "WARNING: Old rc.d/watchfrr detected, this file must be deleted"
 			fi

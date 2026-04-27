@@ -233,15 +233,39 @@ post-install:
 	${INSTALL_DATA} ${WRKSRC}/HPN-README ${STAGEDIR}${DOCSDIR}
 .endif
 
+# percent test does not work unless user's $HOME is set properly.
+SKIP_LTESTS= percent
+
+# A tempdir is used to avoid unix socket namelen issues.
+# TEST_SSH_UNSAFE_PERMISSIONS is because /tmp is world-writable, but
+# the actual test dir is not.
+# Some TEST_SSH_* paths are passed in because test-exec.sh defaults to base
+# versions for them due to being outside of PATH.
 test: build
-	cd ${WRKSRC} && ${SETENV} -i \
-		OBJ=${WRKDIR} ${MAKE_ENV:NHOME=*} \
+	@rtmp=$$(mktemp -dt ssh-regress); \
+	chmod o-rx "$${rtmp}"; \
+	trap "'${RM} $${rtmp}'; exit 1" 1 2 3 5 10 13 15; \
+	${TAR} -cf - -C ${WRKSRC} . | ${TAR} -xf - -C $${rtmp}; \
+	cd $${rtmp} && ${SETENV} -i \
+		${MAKE_ENV:NHOME=*:NPATH=*} \
 		TEST_SHELL=${SH} \
-		SUDO="${SUDO}" \
+		${SUDO:DSUDO="${SUDO}"} \
 		LOGNAME="${LOGNAME}" \
-		HOME="${HOME}" \
+		HOME="$${rtmp}" \
+		TEST_SSH_UNSAFE_PERMISSIONS=1 \
 		TEST_SSH_TRACE=yes \
-		PATH=${WRKSRC}:${PREFIX}/bin:${PREFIX}/sbin:${PATH} \
-		${MAKE_CMD} ${MAKE_FLAGS} ${MAKEFILE} ${MAKE_ARGS} tests
+		TEST_SSH_FAIL_FATAL=yes \
+		TEST_SSH_SFTPSERVER=$${rtmp}/sftp-server \
+		TEST_SSH_SSHD_SESSION=$${rtmp}/sshd-session \
+		TEST_SSH_SSHD_AUTH=$${rtmp}/sshd-auth \
+		PATH=$${rtmp}:${PREFIX}/bin:${PREFIX}/sbin:${PATH} \
+		${MAKE_CMD} ${MAKE_FLAGS} ${MAKEFILE} ${MAKE_ARGS} tests \
+		BUILDDIR="$${rtmp}" \
+		abs_top_srcdir="$${rtmp}" \
+		abs_top_builddir="$${rtmp}" \
+		.OBJDIR="$${rtmp}" \
+		${LTESTS:DLTESTS="${LTESTS}"} \
+		${SKIP_LTESTS:DSKIP_LTESTS="${SKIP_LTESTS}"}; \
+	${RM} -R "$${rtmp}"
 
 .include <bsd.port.post.mk>
